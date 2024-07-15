@@ -1,6 +1,6 @@
 # uma.sh - subdomain enumeration
 
-uma.sh automates the enumeration of subdomains from a specific target with RapidDNS and crt.sh. 
+Automated enumeration of subdomains from a specific target using RapidDNS and crt.sh. 
 
 ## Usage
 
@@ -11,12 +11,31 @@ bash uma.sh targetURI
 
 - Output:
 ```txt
-[*] Requesting subdomains..
-[+] blog.targetURI, state: active
-[+] www.targetURI, state: active
+
+ ▄▄▄    ██▒   █▓ ▄▄▄       ██▓     ██▓    ▄▄▄       ▄████▄   ██░ ██ 
+▒████▄ ▓██░   █▒▒████▄    ▓██▒    ▓██▒   ▒████▄    ▒██▀ ▀█  ▓██░ ██▒
+▒██  ▀█▄▓██  █▒░▒██  ▀█▄  ▒██░    ▒██░   ▒██  ▀█▄  ▒▓█    ▄ ▒██▀▀██░
+░██▄▄▄▄██▒██ █░░░██▄▄▄▄██ ▒██░    ▒██░   ░██▄▄▄▄██ ▒▓▓▄ ▄██▒░▓█ ░██ 
+ ▓█   ▓██▒▒▀█░   ▓█   ▓██▒░██████▒░██████▒▓█   ▓██▒▒ ▓███▀ ░░▓█▒░██▓
+ ▒▒   ▓▒█░░ ▐░   ▒▒   ▓▒█░░ ▒░▓  ░░ ▒░▓  ░▒▒   ▓▒█░░ ░▒ ▒  ░ ▒ ░░▒░▒
+  ▒   ▒▒ ░░ ░░    ▒   ▒▒ ░░ ░ ▒  ░░ ░ ▒  ░ ▒   ▒▒ ░  ░  ▒    ▒ ░▒░ ░
+  ░   ▒     ░░    ░   ▒     ░ ░     ░ ░    ░   ▒   ░         ░  ░░ ░
+      ░  ░   ░        ░  ░    ░  ░    ░  ░     ░  ░░ ░       ░  ░  ░
+            ░                                      ░                
+
+[*] Processing subdomains..
+
+[NOTE] Subdomain pinging disabled
+
+[+] mail.target.xyz
+[+] www.target.xyz
+[+] pop.target.xyz
+[+] demo.target.xyz
+[+] backup.target.xyz
+
+[NOTE] Output saved: target_results.txt
+
 [*] Subdomains: 2
-[*] Save output file? (y/n): y
-[*] Output saved: 2024-06-26_23-47-24-targetURI.txt
 [*] Done, total runtime: 2.000 seconds
 ```
 

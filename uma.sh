@@ -11,11 +11,73 @@
 # 	bash uma.sh example.com 
 
 [[ $# -eq 0 ]] && {
-	printf "Syntax: %s <host>\n" "$0"
+	printf "[ERROR] Try %s -h/--help\n" "$0"
 	exit 1
 }
 
-host="$1"
+uma="
+ ▄▄▄    ██▒   █▓ ▄▄▄       ██▓     ██▓    ▄▄▄       ▄████▄   ██░ ██ 
+▒████▄ ▓██░   █▒▒████▄    ▓██▒    ▓██▒   ▒████▄    ▒██▀ ▀█  ▓██░ ██▒
+▒██  ▀█▄▓██  █▒░▒██  ▀█▄  ▒██░    ▒██░   ▒██  ▀█▄  ▒▓█    ▄ ▒██▀▀██░
+░██▄▄▄▄██▒██ █░░░██▄▄▄▄██ ▒██░    ▒██░   ░██▄▄▄▄██ ▒▓▓▄ ▄██▒░▓█ ░██ 
+ ▓█   ▓██▒▒▀█░   ▓█   ▓██▒░██████▒░██████▒▓█   ▓██▒▒ ▓███▀ ░░▓█▒░██▓
+ ▒▒   ▓▒█░░ ▐░   ▒▒   ▓▒█░░ ▒░▓  ░░ ▒░▓  ░▒▒   ▓▒█░░ ░▒ ▒  ░ ▒ ░░▒░▒
+  ▒   ▒▒ ░░ ░░    ▒   ▒▒ ░░ ░ ▒  ░░ ░ ▒  ░ ▒   ▒▒ ░  ░  ▒    ▒ ░▒░ ░
+  ░   ▒     ░░    ░   ▒     ░ ░     ░ ░    ░   ▒   ░         ░  ░░ ░
+      ░  ░   ░        ░  ░    ░  ░    ░  ░     ░  ░░ ░       ░  ░  ░
+            ░                                      ░                
+"
+
+banner="
+Options
+=======
+ -h, --help		Show this help message
+ -t, --target	Set target (example.com)
+ -o, --out		Save output to x
+ -p, --ping		Ping subdomains
+"
+
+flag_error()
+{
+	local flag="$1"
+	printf "[ERROR] Flag %s requires an argument!\n" "$flag"
+	exit 1
+}
+
+ping_subdomain=0
+
+echo "$uma"
+
+while [[ $# -gt 0 ]]
+do
+	case "$1" in
+	-h|--help)
+		printf "%s\n" "$banner"
+		exit 0
+		;;
+	-t|--target)
+		[[ -n "$2" ]] && {
+			host="$2"
+			shift
+		} || flag_error "-u/--url"
+		;;
+	-o|--out)
+		[[ -n "$2" ]] && {
+			out="$2"
+			shift
+		} || flag_error "-o/--out"
+		;;
+	-p|--ping)
+		ping_subdomain=1 
+		;;
+	*)
+		printf "Unknown Flag: %s\n" "$1"
+		exit 1
+		;;
+	esac
+	shift
+done
+
 output="$(date +"%Y-%m-%d_%H-%M-%S")-${host%.*}.txt"
 info="[*]"
 success="[+]"
@@ -39,66 +101,44 @@ ctrl_c() {
 }
 
 trap ctrl_c INT
-runtime_start=$(date +%s)
+runtime_start="$(date +%s)"
 
 (
 	curl -s "https://crt.sh/?q=%25.$host" \
 		| grep -oE "[\.a-zA-Z0-9-]+\.$host" \
 		| sort -u \
 		| awk '!seen[$0]++' \
-		| tee $output &> /dev/null;
+		| tee "$output" &> /dev/null;
 
-	curl -s "https://rapiddns.io/subdomain/$1?full=1" \
-		| grep -oE "[\.a-zA-Z0-9-]+\.$1" \
+	curl -s "https://rapiddns.io/subdomain/$host?full=1" \
+		| grep -oE "[\.a-zA-Z0-9-]+\.$host" \
 		| sort -u \
 		| awk '!seen[$0]++' \
-		| tee $output &> /dev/null;
+		| tee "$output" &> /dev/null;
 ) &
 
-spinner $!
-printf "\r%s Requesting subdomains..\n" $info
-
-awk '!seen[$0]++' $output | while IFS= read -r line
+spinner "$!"
+printf "\r%s Processing subdomains..\n" "$info"
+[[ $ping_subdomain -eq 0 ]] && printf "\n[NOTE] Subdomain pinging disabled\n"
+awk '!seen[$0]++' "$output" | while IFS= read -r line
 do
-	printf "%s %s, state: " $success $line
-	ping -c 1 $line &> /dev/null && echo -e "active" || echo -e "inactive"
+	printf "\n%s %s" "$success" "$line"
+	[[ $ping_subdomain -eq 1 ]] && {
+		printf " state: " 
+		ping -c 1 "$line" &> /dev/null && echo "active" || echo "inactive"
+	} 
 done 
 
-hits=$(wc -l < $output)
-
-leave() {
-	local question=$1
-	local response
-
-	while true
-	do
-		read -p "$question (y/n): " response
-		case $response in
-		[Yy]*)
-			return 0  
-			;;
-		[Nn]*)
-			return 1  
-			;;
-		*)
-			echo "Please enter 'y' for yes or 'n' for no."
-			;;
-		esac
-	done
+hits=$(wc -l < "$output")
+[[ -z "${out+x}" ]] || [[ $hits -eq 0 ]] && {
+	rm "$output"
+} || {
+	mv "$output" "$out"
+	printf "\n\n[NOTE] Output saved: %s\n\n" "$out"
 }
 
-printf "%s Subdomains: %s\n%s" $info $hits $info
-
-[[ $hits == 0 ]] && rm $output || {
-	leave " Save output file?" $info && {
-		printf "%s Output saved: %s\n" $info $output
-	} || {
-		rm $output
-	}
-}
-
+printf "%s Subdomains: %s\n" "$info" "$hits"
 runtime_end=$(date +%s)
 runtime=$((runtime_end - runtime_start))
-
-printf "%s Done, total runtime: %.3f seconds\n" $info $runtime
+printf "%s Done, total runtime: %.3f seconds\n" "$info" "$runtime"
 exit 0
